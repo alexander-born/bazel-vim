@@ -25,6 +25,20 @@ endfunction
 autocmd FileType bzl nnoremap <buffer> gd :call GoToBazelDefinition()<CR>
 nnoremap gbt :call GoToBazelTarget()<CR>
 
+function! BazelGetCurrentBufTarget()
+    python3 vim.command('let g:current_bazel_target = py3eval("bazel_vim.get_bazel_target()")')
+endfunction
+
+function! RunBazel()
+    :execute 'Bazel ' . g:bazel_command . ' ' . g:current_bazel_target
+endfunction
+
+function! RunBazelHere(command)
+    :let g:bazel_command = a:command
+    :call BazelGetCurrentBufTarget()
+    :call RunBazel()
+endfunction
+
 function! PrintLabel()
     python3 bazel_vim.print_label()
 endfunction
