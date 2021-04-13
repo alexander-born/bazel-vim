@@ -1,5 +1,9 @@
 # bazel-vim
-WIP - no support
+
+### dependency
+```
+Plug 'bazelbuild/vim-bazel'
+```
 
 Adds the following:
 
