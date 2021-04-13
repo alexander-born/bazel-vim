@@ -1,6 +1,19 @@
 # bazel-vim
 WIP - no support
 
-Adds go to bazel definition and go to bazel target
+Adds the following:
 
-Copied code from collegue and added to vim plugin, thanks tim :)
+### keybindings:
+```
+autocmd FileType bzl nnoremap <buffer> gd :call GoToBazelDefinition()<CR>
+nnoremap gbt :call GoToBazelTarget()<CR>
+```
+
+### functions:
+```
+BazelGetCurrentBufTarget()
+RunBazel()
+RunBazelHere(command)
+```
+
+Special thanks to tim :)
