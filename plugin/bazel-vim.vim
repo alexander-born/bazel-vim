@@ -26,7 +26,7 @@ autocmd FileType bzl nnoremap <buffer> gd :call GoToBazelDefinition()<CR>
 nnoremap gbt :call GoToBazelTarget()<CR>
 
 function! BazelGetCurrentBufTarget()
-    python3 vim.command('let g:current_bazel_target = py3eval("bazel_vim.get_bazel_target()")')
+    let g:current_bazel_target = py3eval("bazel_vim.get_bazel_target()")
 endfunction
 
 function! RunBazel()
