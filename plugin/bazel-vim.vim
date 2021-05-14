@@ -21,10 +21,6 @@ function! GoToBazelTarget()
   call search(pattern, "w", 0, 500)
 endfunction
 
-
-autocmd FileType bzl nnoremap <buffer> gd :call GoToBazelDefinition()<CR>
-nnoremap gbt :call GoToBazelTarget()<CR>
-
 function! BazelGetCurrentBufTarget()
     let g:current_bazel_target = py3eval("bazel_vim.get_bazel_target()")
 endfunction
