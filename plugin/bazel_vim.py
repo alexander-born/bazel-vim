@@ -33,6 +33,13 @@ def print_label():
     bazel.print_label(vim.current.buffer.name, "\n".join(vim.current.buffer), row, col)
 
 
+def get_target_label():
+    row, col = vim.current.window.cursor
+    return bazel.get_target_label(
+        vim.current.buffer.name, "\n".join(vim.current.buffer), row, col
+    )
+
+
 def bazel_query(args):
     command = f"bazel query {args} --color no --curses no --noshow_progress"
     return subprocess.check_output(command.split(" ")).decode("utf-8").strip("\n")

@@ -39,7 +39,9 @@ def collect_imported_symbols(fname, workspace_root=None):
             continue
 
         extension_label = stmt.value.args[0].s
-        path = resolve_label_str(extension_label, resolve_filename(fname, workspace_root), workspace_root)
+        path = resolve_label_str(
+            extension_label, resolve_filename(fname, workspace_root), workspace_root
+        )
         targets = list(collect_targets(parse_file_by_name(path)))
 
         for symbol in stmt.value.args[1:]:
@@ -193,13 +195,21 @@ def find_definition_at(fname, text, row, col, workspace_root=None):
         return None
 
 
-def print_label(fname, text, row, col, workspace_root=None):
+def get_target_label(fname, text, row, col, workspace_root=None):
     if workspace_root is None:
         workspace_root = find_workspace_root(os.getcwd())
     module = parse_module_text(text)
     node = find_node(module, row, col)
     if isinstance(node, ast.Str):
-        print(str(parse_label(node.s, resolve_filename(fname, workspace_root))))
+        return str(parse_label(node.s, resolve_filename(fname, workspace_root)))
+    else:
+        return None
+
+
+def print_label(fname, text, row, col, workspace_root=None):
+    label = get_target_label(fname, text, row, col, workspace_root)
+    if label:
+        print(label)
     else:
         print("No label found under cursor.")
 

@@ -39,4 +39,9 @@ function! PrintLabel()
     python3 bazel_vim.print_label()
 endfunction
 
+function! GetLabel()
+    return py3eval("bazel_vim.get_target_label()")
+endfunction
+
 command! -nargs=0 PrintLabel call PrintLabel()
+command! -nargs=0 GetLabel call GetLabel()
