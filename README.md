@@ -1,6 +1,13 @@
-# bazel-vim
+# features
+ - go to definition insides bazel files
+ - build/test/run bazel target of current buffer
+ - jump to BUILD file of current buffer
+ - start debugger of gtest at current cursor position (requires nvim-dap or vimspector)
+ - get full bazel label at current cursor position inside BUILD file
+ 
+ For auto completion of bazel targets checkout [cmp-bazel](https://github.com/alexander-born/cmp-bazel)
 
-### dependency
+### dependencies
 ```lua
     use {'bazelbuild/vim-bazel'}
     use {'nvim-treesitter/nvim-treesitter'} -- needed for lua functions (debugging bazel gtests)
@@ -13,6 +20,7 @@ BazelGetCurrentBufTarget()   " Get the bazel target of current buffer
 GoToBazelTarget()            " Jumps to the BUILD file of current target
 RunBazelHere(command)        " Runs the current bazel target with given command
 RunBazel()                   " Repeats the last bazel run
+GetLabel()                   " Returns bazel label of target in build file
 ```
 
 ### lua functions:
@@ -32,7 +40,46 @@ nnoremap <Leader>bb  :call RunBazelHere("build " . g:bazel_config . " -c opt")<C
 nnoremap <Leader>bdb :call RunBazelHere("build " . g:bazel_config . " -c dbg")<CR>
 nnoremap <Leader>bdt :lua  require'config.bazel'.DebugThisTest()<CR>
 nnoremap <Leader>bl  :call RunBazel()<CR>
+function! YankLabel()
+    let label = GetLabel()
+    echo "yanking " . label . " to + and \" register"
+    call setreg('+', label)
+    call setreg('"', label)
+endfunction
+nnoremap <Leader>y  :call YankLabel()<CR>
 
+```
+
+### debug (nvim-dap) of current bazel gtest
+Add the following snippet to your config: (i.e. /lua/config/bazel.lua )
+
+```lua
+local function StartDebugger(_, code)
+    if code == 0 then
+        vim.cmd('bdelete')
+        require'dapui'.open()
+        require'dap'.run({
+            name = "Launch",
+            type = "cppdbg",
+            request = "launch",
+            program = function() return require('bazel').get_bazel_test_executable() end,
+            cwd = vim.fn.getcwd(),
+            stopOnEntry = false,
+            args = {'--gtest_filter=' .. require('bazel').get_gtest_filter()},
+            runInTerminal = false,
+        })
+    end
+end
+
+local M = {}
+
+function M.DebugThisTest()
+    vim.fn.BazelGetCurrentBufTarget()
+    vim.cmd('new')
+    vim.fn.termopen('bazel build ' .. vim.g.bazel_config .. ' -c dbg ' .. vim.g.current_bazel_target, {on_exit = StartDebugger })
+end
+
+return M
 ```
 
 ### debug (vimspector) of current bazel gtest
