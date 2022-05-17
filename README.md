@@ -31,6 +31,24 @@ require('bazel').get_bazel_test_executable()
 
 ### example keybindings
 This plugin adds no keybindings, you need to manually add keybindings. Example:
+```lua
+local map = vim.keymap.set
+vim.api.nvim_create_autocmd("FileType", { pattern = "bzl", callback = function() map('n', 'gd', vim.fn.GoToBazelDefinition, { buffer = 0 }) end })
+map('n', 'gbt',         vim.fn.GoToBazelTarget)
+map('n', '<Leader>bl',  vim.fn.RunBazel)
+map('n', '<Leader>bdt', require'config.bazel'.DebugThisTest)
+map('n', '<Leader>bt',  function() vim.fn.RunBazelHere("test "  .. vim.g.bazel_config .. " -c opt") end)
+map('n', '<Leader>bb',  function() vim.fn.RunBazelHere("build " .. vim.g.bazel_config .. " -c opt") end)
+map('n', '<Leader>br',  function() vim.fn.RunBazelHere("run "   .. vim.g.bazel_config .. " -c opt") end)
+map('n', '<Leader>bdb', function() vim.fn.RunBazelHere("build " .. vim.g.bazel_config .. " -c dbg") end)
+function YankLabel()
+    local label = vim.fn.GetLabel()
+    print('yanking ' .. label .. ' to + and " register')
+    vim.fn.setreg('+', label)
+    vim.fn.setreg('"', label)
+end
+map('n', '<Leader>y', YankLabel)
+```
 
 ```viml
 autocmd FileType bzl nnoremap <buffer> gd :call GoToBazelDefinition()<CR>
@@ -54,21 +72,31 @@ nnoremap <Leader>y  :call YankLabel()<CR>
 Add the following snippet to your config: (i.e. /lua/config/bazel.lua )
 
 ```lua
-local function StartDebugger(_, code)
-    if code == 0 then
-        vim.cmd('bdelete')
-        require'dapui'.open()
-        require'dap'.run({
-            name = "Launch",
-            type = "cppdbg",
-            request = "launch",
-            program = function() return require('bazel').get_bazel_test_executable() end,
-            cwd = vim.fn.getcwd(),
-            stopOnEntry = false,
-            args = {'--gtest_filter=' .. require('bazel').get_gtest_filter()},
-            runInTerminal = false,
-        })
+local function StartDebugger(program, args)
+    require'dapui'.open()
+    require'dap'.run({
+        name = "Launch",
+        type = "cppdbg",
+        request = "launch",
+        program = function() return program end,
+        cwd = vim.fn.getcwd(),
+        stopOnEntry = false,
+        args = args,
+        runInTerminal = false,
+    })
+end
+
+function M.DebugThisTest()
+    local program = require('bazel').get_bazel_test_executable()
+    local args = {'--gtest_filter=' .. require('bazel').get_gtest_filter()}
+    vim.cmd('new')
+    local on_exit = function(_, code)
+        if code == 0 then
+            vim.cmd('bdelete')
+            StartDebugger(program, args)
+        end
     end
+    vim.fn.termopen('bazel build ' .. vim.g.bazel_config .. ' -c dbg ' .. vim.g.current_bazel_target, {on_exit = on_exit})
 end
 
 local M = {}
