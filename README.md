@@ -99,14 +99,6 @@ function M.DebugThisTest()
     vim.fn.termopen('bazel build ' .. vim.g.bazel_config .. ' -c dbg ' .. vim.g.current_bazel_target, {on_exit = on_exit})
 end
 
-local M = {}
-
-function M.DebugThisTest()
-    vim.fn.BazelGetCurrentBufTarget()
-    vim.cmd('new')
-    vim.fn.termopen('bazel build ' .. vim.g.bazel_config .. ' -c dbg ' .. vim.g.current_bazel_target, {on_exit = StartDebugger })
-end
-
 return M
 ```
 
