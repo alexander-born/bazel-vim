@@ -47,7 +47,9 @@ function! BazelGetCurrentBufTarget()
 endfunction
 
 function! RunBazel()
-    :execute 'Bazel ' . g:bazel_command . ' ' . g:current_bazel_target
+    let l:cwd = py3eval("bazel_vim.get_workspace_root()")
+    :new
+    :call termopen('bazel ' . g:bazel_command . ' ' . g:current_bazel_target, {'cwd':l:cwd })
 endfunction
 
 function! RunBazelHere(command)

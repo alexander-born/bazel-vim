@@ -41,6 +41,23 @@ local function get_gtest_info()
             test_name  = get_text_of_capture(bufnr, '@test_name', gtest_node)}
 end
 
+function M.get_bazel_workspace()
+    local bufnr = vim.fn.bufnr()
+    local buf_dir = vim.fn.expand(('#%d:p:h'):format(bufnr))
+    local workspace = buf_dir
+    while(1)
+    do
+        if(vim.fn.filereadable(workspace .. '/WORKSPACE') == 1) then
+            break
+        end
+        if(workspace == '/') then
+            return buf_dir
+        end
+        workspace = vim.fn.fnamemodify(workspace, ":h");
+    end
+    return workspace
+end
+
 function M.get_gtest_filter()
     local test_info = get_gtest_info()
     local test_filter = test_info.test_suite .. '.' .. test_info.test_name
@@ -52,7 +69,7 @@ end
 function M.get_bazel_test_executable()
     vim.fn.BazelGetCurrentBufTarget()
     local executable = vim.g.current_bazel_target:gsub(':', '/')
-    return executable:gsub('//', 'bazel-bin/')
+    return M:get_bazel_workspace() .. '/' .. executable:gsub('//', 'bazel-bin/')
 
 end
 
