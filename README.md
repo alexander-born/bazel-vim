@@ -9,7 +9,6 @@
 
 ### dependencies
 ```lua
-    use {'bazelbuild/vim-bazel'}
     use {'nvim-treesitter/nvim-treesitter'} -- needed for lua functions (debugging bazel gtests)
 ```
 
@@ -27,6 +26,7 @@ GetLabel()                   " Returns bazel label of target in build file
 ```lua
 require('bazel').get_gtest_filter()
 require('bazel').get_bazel_test_executable()
+require('bazel').get_bazel_workspace()
 ```
 
 ### example keybindings
@@ -72,31 +72,34 @@ nnoremap <Leader>y  :call YankLabel()<CR>
 Add the following snippet to your config: (i.e. /lua/config/bazel.lua )
 
 ```lua
-local function StartDebugger(program, args)
-    require'dapui'.open()
+local M = {}
+
+local function StartDebugger(program, args, bazel_root)
     require'dap'.run({
         name = "Launch",
         type = "cppdbg",
         request = "launch",
         program = function() return program end,
-        cwd = vim.fn.getcwd(),
+        cwd = bazel_root,
         stopOnEntry = false,
         args = args,
         runInTerminal = false,
+        setupCommands = {{text = "-enable-pretty-printing", ignoreFailures = true}},
     })
 end
 
 function M.DebugThisTest()
     local program = require('bazel').get_bazel_test_executable()
     local args = {'--gtest_filter=' .. require('bazel').get_gtest_filter()}
+    local bazel_root = require('bazel').get_bazel_workspace()
     vim.cmd('new')
-    local on_exit = function(_, code)
-        if code == 0 then
+    local start_debugger = function(_, success)
+        if success == 0 then
             vim.cmd('bdelete')
-            StartDebugger(program, args)
+            StartDebugger(program, args, bazel_root)
         end
     end
-    vim.fn.termopen('bazel build ' .. vim.g.bazel_config .. ' -c dbg ' .. vim.g.current_bazel_target, {on_exit = on_exit})
+    vim.fn.termopen('bazel build ' .. vim.g.bazel_config .. ' -c dbg --cxxopt=-O0 ' .. vim.g.current_bazel_target, {on_exit = start_debugger, cwd = bazel_root })
 end
 
 return M
