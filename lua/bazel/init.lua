@@ -58,6 +58,10 @@ function M.get_bazel_workspace()
     return workspace
 end
 
+function M.is_bazel_workspace()
+    return vim.fn.filereadable(M.get_bazel_workspace() .. '/WORKSPACE') == 1
+end
+
 function M.get_gtest_filter()
     local test_info = get_gtest_info()
     local test_filter = test_info.test_suite .. '.' .. test_info.test_name
