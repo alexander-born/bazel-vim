@@ -41,25 +41,40 @@ local function get_gtest_info()
             test_name  = get_text_of_capture(bufnr, '@test_name', gtest_node)}
 end
 
-function M.get_bazel_workspace()
-    local bufnr = vim.fn.bufnr()
-    local buf_dir = vim.fn.expand(('#%d:p:h'):format(bufnr))
-    local workspace = buf_dir
+local function get_parent_path_with_file(path, file)
+    local initial_path = path or vim.fn.expand(('#%d:p:h'):format(vim.fn.bufnr()))
+    local workspace = initial_path
     while(1)
     do
-        if(vim.fn.filereadable(workspace .. '/WORKSPACE') == 1) then
+        if(vim.fn.filereadable(workspace .. '/' .. file) == 1) then
             break
         end
         if(workspace == '/') then
-            return buf_dir
+            return initial_path
         end
         workspace = vim.fn.fnamemodify(workspace, ":h");
     end
     return workspace
 end
 
-function M.is_bazel_workspace()
-    return vim.fn.filereadable(M.get_bazel_workspace() .. '/WORKSPACE') == 1
+function M.get_workspace(path)
+    return get_parent_path_with_file(path, 'WORKSPACE')
+end
+
+function M.is_bazel_workspace(path)
+    return vim.fn.filereadable(M.get_workspace(path) .. '/WORKSPACE') == 1
+end
+
+local function get_cache_file(path)
+    return get_parent_path_with_file(path, 'DO_NOT_BUILD_HERE') .. '/DO_NOT_BUILD_HERE'
+end
+
+function M.is_bazel_cache(path)
+    return vim.fn.filereadable(get_cache_file(path)) == 1
+end
+
+function M.get_workspace_from_cache(path)
+    return vim.fn.system('cat ' .. get_cache_file(path))
 end
 
 function M.get_gtest_filter()
@@ -70,10 +85,10 @@ function M.get_gtest_filter()
     return test_filter
 end
 
-function M.get_bazel_test_executable()
+function M.get_executable()
     vim.fn.BazelGetCurrentBufTarget()
     local executable = vim.g.current_bazel_target:gsub(':', '/')
-    return M:get_bazel_workspace() .. '/' .. executable:gsub('//', 'bazel-bin/')
+    return M.get_workspace() .. '/' .. executable:gsub('//', 'bazel-bin/')
 
 end
 

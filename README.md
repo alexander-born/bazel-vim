@@ -25,8 +25,8 @@ GetLabel()                   " Returns bazel label of target in build file
 ### lua functions:
 ```lua
 require('bazel').get_gtest_filter()
-require('bazel').get_bazel_test_executable()
-require('bazel').get_bazel_workspace()
+require('bazel').get_executable()
+require('bazel').get_workspace()
 ```
 
 ### example keybindings
@@ -89,7 +89,7 @@ local function StartDebugger(program, args, bazel_root)
 end
 
 function M.DebugThisTest()
-    local program = require('bazel').get_bazel_test_executable()
+    local program = require('bazel').get_executable()
     local args = {'--gtest_filter=' .. require('bazel').get_gtest_filter()}
     local bazel_root = require('bazel').get_bazel_workspace()
     vim.cmd('new')
@@ -123,7 +123,7 @@ end
 
 local function create_cpp_vimspector_json_for_bazel_test()
     local test_filter = require('bazel').get_gtest_filter()
-    local executable =  require('bazel').get_bazel_test_executable()
+    local executable =  require('bazel').get_executable()
     local lines = {
         '{',
         '  "configurations": {',
