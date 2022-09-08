@@ -92,4 +92,62 @@ function M.get_executable()
 
 end
 
+local function query(args, workspace, callback)
+    local query_cmd = "timeout 10 bazel query " .. args ..  " --color no --curses no --noshow_progress"
+    local out = {}
+    local function collect_stdout(_, stdout)
+        for _, line in pairs(stdout) do
+            if line ~= "" then table.insert(out, line) end
+        end
+    end
+
+    local function on_exit(_, success) if success == 0 then callback(out) else print("No results for: " .. query_cmd) end end
+    vim.fn.jobstart(query_cmd, { cwd = workspace, on_stdout = collect_stdout, on_exit = on_exit })
+end
+
+local function call_with_bazel_targets(callback)
+    local fname = vim.fn.expand('%:p')
+    local workspace = M.get_workspace(fname)
+    local fname_rel = fname:match(workspace .. "/(.*)")
+    local function query_targets(fname_label)
+        local file_label = fname_label[1]
+        local file_package = file_label:match("(.*):")
+        local function query_cmd(attr) return "attr(" .. attr .. "," .. file_label .. "," .. file_package .. ":*)" end
+        query("'" .. query_cmd("srcs") .. " union " .. query_cmd("hdrs") .. "'", workspace, callback)
+    end
+    query(fname_rel, workspace, query_targets)
+end
+
+function M.call_with_bazel_target(callback)
+    local function choice(targets)
+        local n = vim.tbl_count(targets)
+        if n == 0 then print("No bazel targets found for this file.") return end
+        if n == 1 then callback(targets[1]) end
+        if n > 1 then vim.ui.select(targets, { prompt = "Choose bazel target:"}, function(target) if target ~= nil then callback(target) end end) end
+    end
+    call_with_bazel_targets(choice)
+end
+
+function M.run_bazel()
+    if vim.g.current_bazel_target == nil then print("Current bazel target not set.") return end
+
+    if vim.g.bazel_win == nil or not vim.api.nvim_win_is_valid(vim.g.bazel_win) then
+        vim.cmd("new")
+        vim.g.bazel_win = vim.api.nvim_get_current_win()
+    else
+        vim.api.nvim_set_current_win(vim.g.bazel_win)
+        vim.api.nvim_win_set_buf(vim.g.bazel_win, vim.api.nvim_create_buf(false, true))
+    end
+    vim.fn.termopen('bazel ' .. vim.g.bazel_command .. ' ' .. vim.g.current_bazel_target, { cwd = M.get_workspace() })
+    vim.fn.feedkeys("G")
+end
+
+function M.run_bazel_here(command)
+    M.call_with_bazel_target(function(target)
+        vim.g.bazel_command = command
+        vim.g.current_bazel_target = target
+        M.run_bazel()
+    end)
+end
+
 return M
