@@ -50,7 +50,7 @@ local function get_parent_path_with_file(path, file)
             break
         end
         if(workspace == '/') then
-            return initial_path
+            return nil
         end
         workspace = vim.fn.fnamemodify(workspace, ":h");
     end
@@ -62,7 +62,7 @@ function M.get_workspace(path)
 end
 
 function M.is_bazel_workspace(path)
-    return vim.fn.filereadable(M.get_workspace(path) .. '/WORKSPACE') == 1
+    return M.get_workspace(path) ~= nil
 end
 
 local function get_cache_file(path)
@@ -70,7 +70,7 @@ local function get_cache_file(path)
 end
 
 function M.is_bazel_cache(path)
-    return vim.fn.filereadable(get_cache_file(path)) == 1
+    return get_parent_path_with_file(path, 'DO_NOT_BUILD_HERE') ~= nil
 end
 
 function M.get_workspace_from_cache(path)
@@ -108,6 +108,7 @@ end
 local function call_with_bazel_targets(callback)
     local fname = vim.fn.expand('%:p')
     local workspace = M.get_workspace(fname)
+    if workspace == nil then print("Not in a bazel workspace.") return end
     local fname_rel = fname:match(workspace .. "/(.*)")
     local function query_targets(fname_label)
         local file_label = fname_label[1]
