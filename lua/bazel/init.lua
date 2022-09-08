@@ -43,6 +43,7 @@ end
 
 local function get_parent_path_with_file(path, file)
     local initial_path = path or vim.fn.expand(('#%d:p:h'):format(vim.fn.bufnr()))
+    if initial_path == "" then return nil end
     local workspace = initial_path
     while(1)
     do
