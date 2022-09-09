@@ -132,13 +132,16 @@ end
 
 function M.run(command)
     vim.g.bazel_last_command = command
+    local new_buf = nil
     if vim.tbl_count(vim.api.nvim_list_wins()) == 1 or vim.g.bazel_win == nil or not vim.api.nvim_win_is_valid(vim.g.bazel_win) then
         vim.cmd("new")
         vim.g.bazel_win = vim.api.nvim_get_current_win()
+        new_buf = vim.api.nvim_get_current_buf()
     else
         vim.api.nvim_set_current_win(vim.g.bazel_win)
-        vim.api.nvim_win_set_buf(vim.g.bazel_win, vim.api.nvim_create_buf(false, true))
     end
+    vim.api.nvim_win_set_buf(vim.g.bazel_win, vim.api.nvim_create_buf(false, true))
+    if new_buf ~= nil then vim.api.nvim_buf_delete(new_buf, {}) end
     vim.fn.termopen('bazel ' .. command, { cwd = M.get_workspace() })
     vim.fn.feedkeys("G")
 end
