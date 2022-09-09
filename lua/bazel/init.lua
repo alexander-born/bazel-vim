@@ -130,7 +130,10 @@ function M.call_with_bazel_target(callback)
     call_with_bazel_targets(choice)
 end
 
-function M.run(command)
+function M.run(command, options)
+    options = options or {}
+    if options.cwd == nil then options.cwd = M.get_workspace() end
+    vim.g.bazel_last_options = options
     vim.g.bazel_last_command = command
     local new_buf = nil
     if vim.tbl_count(vim.api.nvim_list_wins()) == 1 or vim.g.bazel_win == nil or not vim.api.nvim_win_is_valid(vim.g.bazel_win) then
@@ -142,18 +145,18 @@ function M.run(command)
     end
     vim.api.nvim_win_set_buf(vim.g.bazel_win, vim.api.nvim_create_buf(false, true))
     if new_buf ~= nil then vim.api.nvim_buf_delete(new_buf, {}) end
-    vim.fn.termopen('bazel ' .. command, { cwd = M.get_workspace() })
+    vim.fn.termopen('bazel ' .. command, options)
     vim.fn.feedkeys("G")
 end
 
 function M.run_last()
     if vim.g.bazel_last_command == nil then print("Last bazel command not set.") return end
-    M.run(vim.g.bazel_last_command)
+    M.run(vim.g.bazel_last_command, vim.g.bazel_last_options)
 end
 
-function M.run_here(command)
+function M.run_here(command, options)
     M.call_with_bazel_target(function(target)
-        M.run(command .. ' ' .. target)
+        M.run(command .. ' ' .. target, options)
     end)
 end
 
