@@ -86,10 +86,9 @@ function M.get_gtest_filter()
     return test_filter
 end
 
-function M.get_executable()
-    vim.fn.BazelGetCurrentBufTarget()
-    local executable = vim.g.current_bazel_target:gsub(':', '/')
-    return M.get_workspace() .. '/' .. executable:gsub('//', 'bazel-bin/')
+local function get_executable(target, workspace)
+    local executable = target:gsub(':', '/')
+    return workspace .. '/' .. executable:gsub('//', 'bazel-bin/')
 
 end
 
@@ -130,11 +129,7 @@ function M.call_with_bazel_target(callback)
     call_with_bazel_targets(choice)
 end
 
-function M.run(command, options)
-    options = options or {}
-    if options.cwd == nil then options.cwd = M.get_workspace() end
-    vim.g.bazel_last_options = options
-    vim.g.bazel_last_command = command
+local function create_window()
     local new_buf = nil
     if vim.tbl_count(vim.api.nvim_list_wins()) == 1 or vim.g.bazel_win == nil or not vim.api.nvim_win_is_valid(vim.g.bazel_win) then
         vim.cmd("new")
@@ -145,18 +140,59 @@ function M.run(command, options)
     end
     vim.api.nvim_win_set_buf(vim.g.bazel_win, vim.api.nvim_create_buf(false, true))
     if new_buf ~= nil then vim.api.nvim_buf_delete(new_buf, {}) end
-    vim.fn.termopen('bazel ' .. command, options)
+end
+
+local function close_window()
+    vim.api.nvim_win_close(vim.g.bazel_win, true)
+end
+
+local function store_for_run_last(command, args, target, workspace, opts)
+    vim.g.bazel_last_command = command
+    vim.g.bazel_last_args = args
+    vim.g.bazel_last_target = target
+    vim.g.bazel_last_workspace = workspace
+    vim.g.bazel_last_opts = opts
+end
+
+local function get_bazel_info(workspace, target)
+    local info = {}
+    info.workspace = workspace
+    info.executable = get_executable(target, workspace)
+    info.runfiles = info.executable .. ".runfiles"
+    return info
+end
+
+local function get_options(workspace, opts, bazel_info)
+    opts = opts or {}
+    return {
+        cwd = workspace,
+        on_exit = function(_, success)
+            if success ~= 0 then return end
+            if opts.on_success ~= nil then
+                close_window()
+                opts.on_success(bazel_info)
+            end
+        end,
+    }
+end
+
+function M.run(command, args, target, workspace, opts)
+    local bazel_info = get_bazel_info(workspace, target)
+    store_for_run_last(command, args, target, workspace, opts)
+    create_window()
+    vim.fn.termopen('bazel ' .. command .. " " .. args .. " " .. target, get_options(workspace, opts, bazel_info))
     vim.fn.feedkeys("G")
 end
 
 function M.run_last()
     if vim.g.bazel_last_command == nil then print("Last bazel command not set.") return end
-    M.run(vim.g.bazel_last_command, vim.g.bazel_last_options)
+    M.run(vim.g.bazel_last_command, vim.g.bazel_last_args, vim.g.bazel_last_target, vim.g.bazel_last_workspace, vim.g.bazel_last_opts)
 end
 
-function M.run_here(command, options)
+-- opts: on_success function(bazel_info)
+function M.run_here(command, args, opts)
     M.call_with_bazel_target(function(target)
-        M.run(command .. ' ' .. target, options)
+        M.run(command, args, target, M.get_workspace(), opts)
     end)
 end
 
