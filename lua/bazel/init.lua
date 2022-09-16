@@ -62,6 +62,12 @@ function M.get_workspace(path)
     return get_parent_path_with_file(path, 'WORKSPACE')
 end
 
+function M.get_workspace_name(path)
+    local workspace_file = M.get_workspace(path) .. "/WORKSPACE"
+    local workspace_content = vim.fn.system('cat ' .. workspace_file)
+    return workspace_content:match('workspace%(name = "(.-)"%)')
+end
+
 function M.is_bazel_workspace(path)
     return M.get_workspace(path) ~= nil
 end
@@ -157,6 +163,7 @@ end
 local function get_bazel_info(workspace, target)
     local info = {}
     info.workspace = workspace
+    info.workspace_name = M.get_workspace_name(workspace)
     info.executable = get_executable(target, workspace)
     info.runfiles = info.executable .. ".runfiles"
     return info
