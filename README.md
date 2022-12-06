@@ -10,14 +10,11 @@
 ### Installation
 Use your favorite package mananger. Example packer:
 ```lua
-use {'alexander-born/bazel-vim'}
+use {'alexander-born/bazel-vim', requires = {'nvim-treesitter/nvim-treesitter'} }
 ```
 
-### Dependencies
-```lua
-    use {'nvim-treesitter/nvim-treesitter'} -- needed for lua functions (debugging bazel gtests)
-```
-
+### Configuration
+See configuration in [wiki](https://github.com/alexander-born/bazel-vim/wiki).
 
 ### vim functions:
 ```viml
@@ -45,6 +42,3 @@ bazel.get_gtest_filter()
 
 bazel.call_with_bazel_target(callback)
 ```
-
-### Configuration
-See configuration in [wiki](https://github.com/alexander-born/bazel-vim/wiki).
